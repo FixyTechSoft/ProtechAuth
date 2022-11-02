@@ -3,6 +3,9 @@ using Auth.Application.Ports.Repositories;
 using Auth.Application.Ports.Services;
 using Auth.Application.UseCases.CreateUser.Request;
 using Auth.Application.UseCases.CreateUser.Response;
+using Auth.Application.UseCases.Login.Response;
+using Auth.Application.UseCases.Login.Validators;
+using Auth.Application.Validators;
 using Auth.Domain;
 using Microsoft.Extensions.Logging;
 using System;
@@ -35,10 +38,36 @@ namespace Auth.Application.UseCases.CreateUser
         {
             try
             {
+                UserCreateValidator createValidator = new();
+                var ValidatorResult = createValidator.Validate(request);
+
+                if (!ValidatorResult.IsValid)
+                {
+                    var response = new CreateUserErrorResponse
+                    {
+                        Message = ValidatorResult.Errors.First().ErrorMessage,
+                        Code = (int)ErrorCodes.ValidationError
+                    };
+                    return response;
+
+                }
+
                 var salt = _cryptographyService.GenerateSalt();
                 var currentDate = DateTime.UtcNow;
 
-                var user = new User
+                var user = await _authRepository.GetUserByEmail(request.Email);
+
+                if (user != null)
+                {
+                    var response = new CreateUserErrorResponse
+                    {
+                        Message = ErrorMessages.UserRegisterExist,
+                        Code = (int)ErrorCodes.UserRegisterExist
+                    };
+                    return response;
+
+                }
+                     user = new User
                 {
                     Id = Guid.NewGuid(),
                     Active = true,
@@ -65,8 +94,8 @@ namespace Auth.Application.UseCases.CreateUser
 
                 var response = new CreateUserErrorResponse
                 {
-                    Message = Enum.GetName(ErrorCodes.AnUnexpectedErrorOcurred),
-                    Code = ErrorCodes.AnUnexpectedErrorOcurred.ToString("D")
+                    Message = ErrorMessages.AnUnexpectedErrorOcurred,
+                    Code = (int)ErrorCodes.AnUnexpectedErrorOcurred
                 };
 
                 return response;

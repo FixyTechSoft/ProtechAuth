@@ -8,7 +8,9 @@
         RefreshTokenIsNotActive = 103,
         RefreshTokenHasExpired = 104,
         RefreshTokenIsNotCorrect = 105,
-        UserDoesNotExist = 106
+        UserDoesNotExist = 106,
+        ValidationError = 107,
+        UserRegisterExist= 108
     }
 
 }

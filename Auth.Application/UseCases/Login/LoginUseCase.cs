@@ -3,9 +3,11 @@ using Auth.Application.Ports.Repositories;
 using Auth.Application.Ports.Services;
 using Auth.Application.UseCases.Login.Request;
 using Auth.Application.UseCases.Login.Response;
+using Auth.Application.UseCases.Login.Validators;
 using Auth.Domain;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Auth.Application.UseCases.Login
@@ -33,13 +35,28 @@ namespace Auth.Application.UseCases.Login
         {
             try
             {
+                LoginValidator loginValidator = new();
+                var ValidatorResult = loginValidator.Validate(request);
+
+                if (!ValidatorResult.IsValid)
+                {
+                    var response = new LoginErrorResponse
+                    {
+                        Message = ValidatorResult.Errors.First().ErrorMessage,
+                        Code = (int)ErrorCodes.ValidationError
+                    };
+                    return response;
+
+                }
+
                 var user = await _authRepository.GetUserByEmail(request.Email);
+
                 if (user == null)
                 {
                     var response = new LoginErrorResponse
                     {
                         Message = ErrorMessages.UserDoesNotExist,
-                        Code = ErrorCodes.UserDoesNotExist.ToString("D")
+                        Code = (int)ErrorCodes.UserDoesNotExist
                     };
                     return response;
                 }
@@ -71,7 +88,7 @@ namespace Auth.Application.UseCases.Login
                     var response = new LoginErrorResponse
                     {
                         Message = ErrorMessages.CredentialsAreNotValid,
-                        Code = ErrorCodes.CredentialsAreNotValid.ToString("D")
+                        Code = (int)ErrorCodes.CredentialsAreNotValid
                     };
 
                     return response;
@@ -83,8 +100,8 @@ namespace Auth.Application.UseCases.Login
 
                 var response = new LoginErrorResponse
                 {
-                    Message = ErrorMessages.AnUnexpectedErrorOcurred,
-                    Code = ErrorCodes.AnUnexpectedErrorOcurred.ToString("D")
+                    Message = ex.Message,
+                    Code = (int)ErrorCodes.AnUnexpectedErrorOcurred
                 };
 
                 return response;

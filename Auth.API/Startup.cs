@@ -29,7 +29,7 @@ namespace Auth.API
         {
             Configuration = configuration;
         }
-
+        private string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
         public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -76,6 +76,20 @@ namespace Auth.API
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Auth.API", Version = "v1" });
             });
+
+
+
+            services.AddCors(options =>
+            {
+                options.AddPolicy(name: MyAllowSpecificOrigins,
+                                  policy =>
+                                  {
+                                      policy.WithOrigins("http://localhost:8080",
+                                                          "http://www.contoso.com")
+                                      .AllowAnyHeader()
+                                      .AllowAnyMethod();
+                                  });
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -88,6 +102,8 @@ namespace Auth.API
                 app.UseDeveloperExceptionPage();
                 app.UseSwagger();
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Auth.API v1"));
+                app.UseCors(MyAllowSpecificOrigins);
+
             }
 
             app.UseRouting();
